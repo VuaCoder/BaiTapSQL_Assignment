@@ -12,14 +12,14 @@ create table Users (
     Phone nvarchar(20),
     Address nvarchar(255),
     CreatedAt datetime default getdate()
-);
+)
 
 -- bảng danh mục sản phẩm
 create table Categories (
     CategoryID int identity(1,1) primary key,
     CategoryName nvarchar(100) not null,
     Description nvarchar(255)
-);
+)
 
 -- bảng sản phẩm
 create table Products (
@@ -29,7 +29,7 @@ create table Products (
     Stock int not null,
     CategoryID int foreign key references Categories(CategoryID),
     CreatedAt datetime default getdate()
-);
+)
 
 -- bảng đơn hàng
 create table Orders (
@@ -37,8 +37,9 @@ create table Orders (
     UserID int foreign key references Users(UserID),
     OrderDate datetime default getdate(),
     TotalAmount decimal(18,2) not null,
-    Status nvarchar(50) default 'pending'
-);
+    Status nvarchar(50) default 'pending',
+    ShipmentID int foreign key references Shipments(ShipmentID) -- liên kết với bảng vận chuyển
+)
 
 -- bảng chi tiết đơn hàng
 create table OrderDetails (
@@ -47,7 +48,7 @@ create table OrderDetails (
     ProductID int foreign key references Products(ProductID),
     Quantity int not null,
     Price decimal(18,2) not null
-);
+)
 
 -- bảng thanh toán
 create table Payments (
@@ -56,7 +57,7 @@ create table Payments (
     PaymentMethod nvarchar(50) not null,
     PaymentStatus nvarchar(50) default 'pending',
     TransactionDate datetime default getdate()
-);
+)
 
 -- bảng đánh giá sản phẩm
 create table Reviews (
@@ -66,11 +67,15 @@ create table Reviews (
     Rating int check (Rating between 1 and 5),
     Comment nvarchar(500),
     ReviewDate datetime default getdate()
-);
+)
 
 -- bảng vận chuyển
 create table Shipments (
     ShipmentID int identity(1,1) primary key,
     OrderID int foreign key references Orders(OrderID),
     Carrier nvarchar(100) not null,
-    TrackingNumber nvarchar
+    TrackingNumber nvarchar(50) unique,
+    ShippingStatus nvarchar(50) default 'processing',
+    EstimatedDeliveryDate datetime,
+    ShippedDate datetime
+)
