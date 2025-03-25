@@ -83,3 +83,32 @@ create table Reviews (
     ReviewDate datetime default getdate()
 )
 
+-- tạo procedure thêm đơn hàng
+create procedure AddOrder
+    @UserID int,
+    @TotalAmount decimal(18,2)
+as
+begin
+    insert into Orders (UserID, TotalAmount) values (@UserID, @TotalAmount);
+end;
+
+go
+
+-- tạo view danh sách đơn hàng
+create view ViewOrders as
+select o.OrderID, u.FullName, o.OrderDate, o.TotalAmount, o.Status
+from Orders o
+join Users u on o.UserID = u.UserID;
+
+go
+
+-- tạo trigger cập nhật số lượng sản phẩm khi đặt hàng
+create trigger trg_UpdateStock on OrderDetails
+after insert
+as
+begin
+    update Products
+    set Stock = Stock - i.Quantity
+    from Products p
+    inner join inserted i on p.ProductID = i.ProductID;
+end;
