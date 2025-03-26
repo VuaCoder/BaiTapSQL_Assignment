@@ -1,128 +1,187 @@
-create database ThuongMaiDienTu_Commercial
-go
-use ThuongMaiDienTu_Commercial
-go
+-- Tạo cơ sở dữ liệu
+CREATE DATABASE E__Commercial;
+GO
+USE E__Commercial;
+GO
 
--- bảng người dùng
-create table Users (
-    UserID int identity(1,1) primary key,
-    FullName nvarchar(100) not null,
-    Email nvarchar(100) unique not null,
-    Password nvarchar(255) not null,
-    Phone nvarchar(20),
-    Address nvarchar(255),
-    CreatedAt datetime default getdate()
-)
-insert into Users(UserID, FullName, Password, Phone, Address
--- bảng danh mục sản phẩm
-create table Categories (
-    CategoryID int identity(1,1) primary key,
-    CategoryName nvarchar(100) not null,
-    Description nvarchar(255)
-)
+-- Bảng người dùng
+CREATE TABLE Users (
+    UserID INT IDENTITY(1,1) PRIMARY KEY,
+    FullName NVARCHAR(100) NOT NULL,
+    Email NVARCHAR(100) UNIQUE NOT NULL,
+    Password NVARCHAR(255) NOT NULL,
+    Phone NVARCHAR(20),
+    Address NVARCHAR(255),
+    CreatedAt DATETIME DEFAULT GETDATE()
+);
 
--- bảng sản phẩm
-create table Products (
-    ProductID int identity(1,1) primary key,
-    ProductName nvarchar(255) not null,
-    Price decimal(18,2) not null,
-    Stock int not null,
-    CategoryID int foreign key references Categories(CategoryID),
-    CreatedAt datetime default getdate()
-)
+-- Bảng danh mục sản phẩm
+CREATE TABLE Categories (
+    CategoryID INT IDENTITY(1,1) PRIMARY KEY,
+    CategoryName NVARCHAR(100) NOT NULL,
+    Description NVARCHAR(255)
+);
 
--- bảng đơn hàng
-create table Orders (
-    OrderID int identity(1,1) primary key,
-    UserID int foreign key references Users(UserID),
-    OrderDate datetime default getdate(),
-    TotalAmount decimal(18,2) not null,
-    Status nvarchar(50) default 'pending'
-)
+-- Bảng sản phẩm
+CREATE TABLE Products (
+    ProductID INT IDENTITY(1,1) PRIMARY KEY,
+    ProductName NVARCHAR(255) NOT NULL,
+    Price DECIMAL(18,2) NOT NULL,
+    Stock INT NOT NULL,
+    CategoryID INT FOREIGN KEY REFERENCES Categories(CategoryID),
+    CreatedAt DATETIME DEFAULT GETDATE()
+);
 
--- bảng vận chuyển
-create table Shipments (
-    ShipmentID int identity(1,1) primary key,
-    OrderID int unique foreign key references Orders(OrderID),
-    Carrier nvarchar(100) not null,
-    TrackingNumber nvarchar(50) unique,
-    ShippingStatus nvarchar(50) default 'processing',
-    EstimatedDeliveryDate datetime,
-    ShippedDate datetime
-)
+-- Bảng đơn hàng
+CREATE TABLE Orders (
+    OrderID INT IDENTITY(1,1) PRIMARY KEY,
+    UserID INT FOREIGN KEY REFERENCES Users(UserID),
+    OrderDate DATETIME DEFAULT GETDATE(),
+    TotalAmount DECIMAL(18,2) NOT NULL,
+    Status NVARCHAR(50) DEFAULT 'pending'
+);
 
--- cập nhật bảng đơn hàng để thêm khóa ngoại ShipmentID sau khi tạo bảng Shipments
-alter table Orders
-add ShipmentID int unique foreign key references Shipments(ShipmentID);
+-- Bảng vận chuyển (đã sửa để không bắt buộc OrderID phải duy nhất)
+CREATE TABLE Shipments (
+    ShipmentID INT IDENTITY(1,1) PRIMARY KEY,
+    OrderID INT FOREIGN KEY REFERENCES Orders(OrderID) ON DELETE CASCADE,
+    Carrier NVARCHAR(100) NOT NULL,
+    TrackingNumber NVARCHAR(50) UNIQUE,
+    ShippingStatus NVARCHAR(50) DEFAULT 'processing',
+    EstimatedDeliveryDate DATETIME,
+    ShippedDate DATETIME
+);
 
--- bảng chi tiết đơn hàng
-create table OrderDetails (
-    OrderDetailID int identity(1,1) primary key,
-    OrderID int foreign key references Orders(OrderID),
-    ProductID int foreign key references Products(ProductID),
-    Quantity int not null,
-    Price decimal(18,2) not null
-)
+-- Bảng chi tiết đơn hàng
+CREATE TABLE OrderDetails (
+    OrderDetailID INT IDENTITY(1,1) PRIMARY KEY,
+    OrderID INT FOREIGN KEY REFERENCES Orders(OrderID),
+    ProductID INT FOREIGN KEY REFERENCES Products(ProductID),
+    Quantity INT NOT NULL,
+    Price DECIMAL(18,2) NOT NULL
+);
 
--- bảng thanh toán
-create table Payments (
-    PaymentID int identity(1,1) primary key,
-    OrderID int foreign key references Orders(OrderID),
-    PaymentMethod nvarchar(50) not null,
-    PaymentStatus nvarchar(50) default 'pending',
-    TransactionDate datetime default getdate()
-)
+-- Bảng thanh toán
+CREATE TABLE Payments (
+    PaymentID INT IDENTITY(1,1) PRIMARY KEY,
+    OrderID INT FOREIGN KEY REFERENCES Orders(OrderID),
+    PaymentMethod NVARCHAR(50) NOT NULL,
+    PaymentStatus NVARCHAR(50) DEFAULT 'pending',
+    TransactionDate DATETIME DEFAULT GETDATE()
+);
 
--- bảng đánh giá sản phẩm
-create table Reviews (
-    ReviewID int identity(1,1) primary key,
-    UserID int foreign key references Users(UserID),
-    ProductID int foreign key references Products(ProductID),
-    Rating int check (Rating between 1 and 5),
-    Comment nvarchar(500),
-    ReviewDate datetime default getdate()
-)
+-- Bảng đánh giá sản phẩm
+CREATE TABLE Reviews (
+    ReviewID INT IDENTITY(1,1) PRIMARY KEY,
+    UserID INT FOREIGN KEY REFERENCES Users(UserID),
+    ProductID INT FOREIGN KEY REFERENCES Products(ProductID),
+    Rating INT CHECK (Rating BETWEEN 1 AND 5),
+    Comment NVARCHAR(500),
+    ReviewDate DATETIME DEFAULT GETDATE()
+);
 
--- bảng giỏ hàng
-create table Carts (
-    CartID int identity(1,1) primary key,
-    UserID int foreign key references Users(UserID),
-    CreatedAt datetime default getdate()
-)
+-- Bảng giỏ hàng
+CREATE TABLE Carts (
+    CartID INT IDENTITY(1,1) PRIMARY KEY,
+    UserID INT FOREIGN KEY REFERENCES Users(UserID),
+    CreatedAt DATETIME DEFAULT GETDATE()
+);
 
--- bảng chi tiết giỏ hàng
-create table CartDetails (
-    CartDetailID int identity(1,1) primary key,
-    CartID int foreign key references Carts(CartID),
-    ProductID int foreign key references Products(ProductID),
-    Quantity int not null
-)
--- tạo procedure thêm đơn hàng
-create procedure AddOrder
-    @UserID int,
-    @TotalAmount decimal(18,2)
-as
-begin
-    insert into Orders (UserID, TotalAmount) values (@UserID, @TotalAmount);
-end;
+-- Bảng chi tiết giỏ hàng
+CREATE TABLE CartDetails (
+    CartDetailID INT IDENTITY(1,1) PRIMARY KEY,
+    CartID INT FOREIGN KEY REFERENCES Carts(CartID),
+    ProductID INT FOREIGN KEY REFERENCES Products(ProductID),
+    Quantity INT NOT NULL
+);
 
-go
+GO
 
--- tạo view danh sách đơn hàng
-create view ViewOrders as
-select o.OrderID, u.FullName, o.OrderDate, o.TotalAmount, o.Status
-from Orders o
-join Users u on o.UserID = u.UserID;
+-- Thêm dữ liệu vào bảng Users
+INSERT INTO Users (FullName, Email, Password, Phone, Address) VALUES
+('Nguyễn Văn A', 'nguyenvana@example.com', 'password123', '0123456789', 'Hà Nội'),
+('Trần Thị B', 'tranthib@example.com', 'password123', '0987654321', 'TP Hồ Chí Minh'),
+('Lê Văn C', 'levanc@example.com', 'password123', '0345678901', 'Đà Nẵng');
 
-go
+-- Thêm dữ liệu vào bảng Categories
+INSERT INTO Categories (CategoryName, Description) VALUES
+('Điện thoại', 'Các loại điện thoại thông minh'),
+('Laptop', 'Máy tính xách tay các hãng'),
+('Phụ kiện', 'Các loại phụ kiện công nghệ');
 
--- tạo trigger cập nhật số lượng sản phẩm khi đặt hàng
-create trigger trg_UpdateStock on OrderDetails
-after insert
-as
-begin
-    update Products
-    set Stock = Stock - i.Quantity
-    from Products p
-    inner join inserted i on p.ProductID = i.ProductID;
-end;
+-- Thêm dữ liệu vào bảng Products
+INSERT INTO Products (ProductName, Price, Stock, CategoryID) VALUES
+('iPhone 14', 25000000, 10, 1),
+('Samsung Galaxy S23', 23000000, 15, 1),
+('MacBook Pro 16', 60000000, 5, 2),
+('Dell XPS 15', 45000000, 8, 2),
+('Tai nghe AirPods Pro', 5000000, 20, 3);
+
+-- Thêm dữ liệu vào bảng Orders
+INSERT INTO Orders (UserID, TotalAmount) VALUES
+(1, 25000000),
+(2, 23000000),
+(3, 5000000);
+
+-- Thêm dữ liệu vào bảng Shipments
+INSERT INTO Shipments (OrderID, Carrier, TrackingNumber, ShippingStatus, EstimatedDeliveryDate, ShippedDate) VALUES
+(1, 'VNPost', 'VN123456', 'shipped', '2025-03-30', '2025-03-27'),
+(2, 'DHL', 'DHL789012', 'processing', '2025-04-02', NULL);
+
+-- Thêm dữ liệu vào bảng OrderDetails
+INSERT INTO OrderDetails (OrderID, ProductID, Quantity, Price) VALUES
+(1, 1, 1, 25000000),
+(2, 2, 1, 23000000),
+(3, 5, 1, 5000000);
+
+-- Thêm dữ liệu vào bảng Payments
+INSERT INTO Payments (OrderID, PaymentMethod, PaymentStatus) VALUES
+(1, 'Credit Card', 'completed'),
+(2, 'PayPal', 'pending'),
+(3, 'Bank Transfer', 'completed');
+
+-- Thêm dữ liệu vào bảng Reviews
+INSERT INTO Reviews (UserID, ProductID, Rating, Comment) VALUES
+(1, 1, 5, 'Sản phẩm rất tốt, đáng tiền!'),
+(2, 2, 4, 'Điện thoại đẹp, nhưng pin hơi yếu.'),
+(3, 5, 5, 'Âm thanh rất tuyệt vời.');
+
+-- Thêm dữ liệu vào bảng Carts
+INSERT INTO Carts (UserID) VALUES
+(1), (2), (3);
+
+-- Thêm dữ liệu vào bảng CartDetails
+INSERT INTO CartDetails (CartID, ProductID, Quantity) VALUES
+(1, 3, 1),
+(2, 4, 1),
+(3, 5, 2);
+
+
+
+-- Tạo procedure thêm đơn hàng
+CREATE PROCEDURE AddOrder
+    @UserID INT,
+    @TotalAmount DECIMAL(18,2)
+AS
+BEGIN
+    INSERT INTO Orders (UserID, TotalAmount) VALUES (@UserID, @TotalAmount);
+END;
+GO
+
+-- Tạo view danh sách đơn hàng
+CREATE VIEW ViewOrders AS
+SELECT o.OrderID, u.FullName, o.OrderDate, o.TotalAmount, o.Status
+FROM Orders o
+JOIN Users u ON o.UserID = u.UserID;
+GO
+
+-- Tạo trigger cập nhật số lượng sản phẩm khi đặt hàng
+CREATE TRIGGER trg_UpdateStock ON OrderDetails
+AFTER INSERT
+AS
+BEGIN
+    UPDATE Products
+    SET Stock = Stock - i.Quantity
+    FROM Products p
+    INNER JOIN inserted i ON p.ProductID = i.ProductID;
+END;
