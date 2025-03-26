@@ -1,4 +1,4 @@
-﻿create database ThuongMaiDienTu_Commercial
+create database ThuongMaiDienTu_Commercial
 go
 use ThuongMaiDienTu_Commercial
 go
@@ -13,7 +13,7 @@ create table Users (
     Address nvarchar(255),
     CreatedAt datetime default getdate()
 )
-
+insert into Users(UserID, FullName, Password, Phone, Address
 -- bảng danh mục sản phẩm
 create table Categories (
     CategoryID int identity(1,1) primary key,
@@ -83,6 +83,20 @@ create table Reviews (
     ReviewDate datetime default getdate()
 )
 
+-- bảng giỏ hàng
+create table Carts (
+    CartID int identity(1,1) primary key,
+    UserID int foreign key references Users(UserID),
+    CreatedAt datetime default getdate()
+)
+
+-- bảng chi tiết giỏ hàng
+create table CartDetails (
+    CartDetailID int identity(1,1) primary key,
+    CartID int foreign key references Carts(CartID),
+    ProductID int foreign key references Products(ProductID),
+    Quantity int not null
+)
 -- tạo procedure thêm đơn hàng
 create procedure AddOrder
     @UserID int,
